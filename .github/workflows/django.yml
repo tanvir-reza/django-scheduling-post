@@ -1,24 +1,27 @@
-name: Django CI
+name: Django Deployment
 
-on: push
+on:
+  push:
+    branches:
+      - new
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 2
-      matrix:
-        python-version: [3.9,3.10]
+
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5.3.0
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run tests
-        run: |
-          python manage.py runserver
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install sshpass
+      run: sudo apt-get update && sudo apt-get install -y sshpass
+
+    - name: INSTALL DEPENDENCIES
+      run: |
+        sudo apt-get update
+        sudo apt-get install python3-pip
+        pip3 install -r requirements.txt
+
+    - name: Run tests
+      run: |
+        python manage.py runserver
