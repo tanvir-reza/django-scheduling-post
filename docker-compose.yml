@@ -1,0 +1,57 @@
+version: '3.7'
+
+services:
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    env_file:
+      - .env
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    command: python manage.py runserver 0.0.0.0:${WEB_PORT}
+    environment:
+      - ENVIRONMENT=production
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    restart: always
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - web
+    env_file:
+      - .env
+    command: celery -A core worker --loglevel=info
+    volumes:
+      - .:/app
+    restart: always
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+      - web
+    env_file:
+      - .env
+    command: celery -A core beat --loglevel=info
+    volumes:
+      - .:/app
+    restart: always
