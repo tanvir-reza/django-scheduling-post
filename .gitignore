@@ -4,3 +4,4 @@ app/__init__.py
 /venv
 .env
 /.vscode
+/redis_data

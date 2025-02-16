@@ -4,12 +4,12 @@ services:
 
   redis:
     image: redis:7.2-alpine
-    container_name: redis
-    env_file:
-      - .env
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
+    command: --port ${REDIS_PORT}
     restart: always
+    env_file:
+      - .env
 
   web:
     build:
@@ -23,7 +23,7 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "${WEB_PORT}:${WEB_PORT}"
     restart: always
 
   celery_worker:
@@ -31,7 +31,6 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - redis
       - web
     env_file:
       - .env
@@ -45,7 +44,6 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - redis
       - web
     env_file:
       - .env

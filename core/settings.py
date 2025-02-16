@@ -15,6 +15,7 @@ import django.core.asgi
 from dotenv import load_dotenv
 import os
 from pathlib import Path
+import redis
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -136,10 +137,10 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
 
 CELERY_TIMEZONE = 'Asia/Dhaka'
 
@@ -158,7 +159,7 @@ CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         # Update with your Redis server details
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": "redis://{REDIS_HOST}:{REDIS_PORT}/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
