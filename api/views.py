@@ -54,7 +54,7 @@ class CustomRegisterView(RegisterView):
         try:
             self.perform_create(serializer)
         except Exception as e:
-            return Res onse({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(
             {
                 "message": "User registered successfully",
