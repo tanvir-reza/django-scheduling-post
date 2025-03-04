@@ -1,6 +1,35 @@
 from django.db import models
-
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.contrib.auth.models import AbstractUser, Group, Permission
 # Create your models here.
+
+
+class UserManagement(AbstractUser):
+    email = models.EmailField(unique=True)
+    username = models.CharField(max_length=100, unique=True)
+    username_validator = UnicodeUsernameValidator()
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+
+    groups = models.ManyToManyField(
+        Group,
+        related_name='user_management_set',  # Add related_name
+        blank=True,
+        help_text='The groups this user belongs to.',
+        verbose_name='groups',
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name='user_management_set',  # Add related_name
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions',
+    )
+
+    def __str__(self):
+        return self.email
 
 
 class Post(models.Model):
