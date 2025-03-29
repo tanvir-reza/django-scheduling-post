@@ -8,7 +8,11 @@ from dj_rest_auth.registration.views import RegisterView,LoginView
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.decorators import permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
-from app.serializers import UserSerializer
+from app.serializers import UserSerializer, PostSerializer
+from app.models import Post
+import time
+from rest_framework import viewsets
+
 
 # Create your views here.
 
@@ -19,6 +23,11 @@ def index(request):
 class CustomLoginView(LoginView):
     
     def post(self, request, *args, **kwargs):
+        username = request.data.get("username")
+        password = request.data.get("password")
+        if username == '' or password == '':
+            return Response({"message": "Username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
         self.request = request
         self.serializer = self.get_serializer(data=request.data)
         self.serializer.is_valid(raise_exception=True)
@@ -45,8 +54,8 @@ class CustomRegisterView(RegisterView):
         password2 = request.data.get("password2")
         fullname = request.data.get("fullname")
         # Check if fields are empty or not
-        if username == '':
-            return Response({"message": "Username is required"}, status=status.HTTP_200_OK)
+        if username == None:
+            return Response({"message": "Username is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         
         serializer = self.get_serializer(data=request.data)
@@ -59,7 +68,7 @@ class CustomRegisterView(RegisterView):
             {
                 "message": "User registered successfully",
             },
-            status=status.HTTP_201_CREATED,
+            status=status.HTTP_200_OK,
             headers=self.get_success_headers(serializer.data),
         )
 
@@ -74,4 +83,83 @@ class CustomRegisterView(RegisterView):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def all_posts(request):
-    return Response("All posts")
+    posts = Post.objects.all()
+    serializer = PostSerializer(posts, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_post(request):
+    title = request.data.get("title")
+    description = request.data.get("description")
+    if title == None or description == None:
+        return Response({"message": "Title and description are required"}, status=status.HTTP_400_BAD_REQUEST)
+    # get file from request
+    image = request.FILES.get("image")
+    try:
+        data = data = request.data
+        data['author'] = request.user.id
+        serializer = PostSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    return Response("Post created successfully")
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_posts(request):
+    my_posts = Post.objects.filter(author=request.user)
+    serializer = PostSerializer(my_posts, many=True)
+    return Response(serializer.data)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_post(request, pk):
+    post = Post.objects.get(id=pk)
+    title = request.data.get("title")
+    description = request.data.get("description")
+    if title == None or description == None:
+        return Response({"message": "Title and description are required"}, status=status.HTTP_400_BAD_REQUEST)
+    post.title = title
+    post.description = description
+    post.save()
+    return Response("Post updated successfully")
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_post(request, pk):
+    post = Post.objects.get(id=pk)
+    post.delete()
+    return Response("Post deleted successfully")
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    request.user.auth_token.delete()
+    return Response({"message": "User logged out successfully"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def post_details(request, pk):
+    post = Post.objects.get(id=pk)
+    serializer = PostSerializer(post)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def aiView(request):
+    user_data = request.data.get("user_data")
+    if user_data == None:
+        return Response({"message": "User data is required"}, status=status.HTTP_400_BAD_REQUEST)
+    from transformers import pipeline
+
+    classifier = pipeline('sentiment-analysis')
+    result = classifier('I hate you so much')
+    print(result)
+    return Response({"message": result}, status=status.HTTP_200_OK)
