@@ -15,5 +15,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response['author'] = instance.author.first_name
+        if response["author"]:
+            response['author'] = instance.author.first_name
+            response['author_id'] = instance.author.id
         return response

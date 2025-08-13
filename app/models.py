@@ -57,11 +57,11 @@ class Post(models.Model):
         return self.title
     
 
-    # def save(self, *args, **kwargs):
-    #     # cheking if the post created or updated
-    #     is_created = self._state.adding
-    #     super().save(*args, **kwargs)
-    #     if is_created:
-    #         from .tasks import publish_post
-    #         publish_post.apply_async((self.id,), eta=self.post_time)
+    def save(self, *args, **kwargs):
+        # cheking if the post created or updated
+        is_created = self._state.adding
+        super().save(*args, **kwargs)
+        if is_created:
+            from .tasks import publish_post
+            publish_post.apply_async((self.id,), eta=self.post_time)
         

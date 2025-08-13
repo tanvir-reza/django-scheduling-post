@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.decorators import permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
 from app.serializers import UserSerializer, PostSerializer
-from app.models import Post
+from app.models import Post, UserManagement
 import time
 from rest_framework import viewsets
 
@@ -18,7 +18,14 @@ from rest_framework import viewsets
 
 @api_view(['GET'])
 def index(request):
-    return render(request, 'index.html')
+    posts = Post.objects.all()
+
+    for post in posts:
+        print(post.author.username)
+
+    serializer = PostSerializer(posts, many=True)
+
+    return Response(serializer.data)
 
 class CustomLoginView(LoginView):
     
@@ -30,18 +37,24 @@ class CustomLoginView(LoginView):
             
         self.request = request
         self.serializer = self.get_serializer(data=request.data)
-        self.serializer.is_valid(raise_exception=True)
+        try:
+            self.serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            return Response({"message": "Wrong Credentials"}, status=status.HTTP_400_BAD_REQUEST)
         self.login()
         user = self.user
         user_serializer = UserSerializer(user)
         refresh = RefreshToken.for_user(user)
         access_token = refresh.access_token
         data = {
+            "message": "User logged in successfully",
             "access_token": str(access_token),
             "refresh_token": str(refresh),
             "user": user_serializer.data  # Corrected this line
         }
         return Response(data, status=status.HTTP_200_OK)
+
+
 
 
 class CustomRegisterView(RegisterView):
@@ -56,6 +69,13 @@ class CustomRegisterView(RegisterView):
         # Check if fields are empty or not
         if username == None:
             return Response({"message": "Username is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if password1 == None or password2 == None:
+            return Response({"message": "Password is required"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            if len(username) < 4:
+                return Response({"message": "Username must be at least 4 characters"}, status=status.HTTP_400_BAD_REQUEST)
+            if password1 != password2:
+                return Response({"message": "Password do not match"}, status=status.HTTP_400_BAD_REQUEST)
         
         
         serializer = self.get_serializer(data=request.data)
@@ -80,6 +100,29 @@ class CustomRegisterView(RegisterView):
             api_settings.TOKEN_CREATOR(self.token_model, user, serializer)
         return user
     
+# make refresh token function view
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def refresh_token(request):
+    user = request.user
+    refresh = RefreshToken.for_user(user)
+    access_token = refresh.access_token
+    data = {
+        "message": "Token refreshed successfully",
+        "access_token": str(access_token),
+        "refresh_token": str(refresh),
+    }
+    return Response(data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def authors(request):
+    authors = UserManagement.objects.all()
+
+    serializer = UserSerializer(authors, many=True)
+
+    return Response(serializer.data)
+    
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def all_posts(request):
@@ -99,7 +142,6 @@ def create_post(request):
     image = request.FILES.get("image")
     try:
         data = data = request.data
-        data['author'] = request.user.id
         serializer = PostSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -127,6 +169,8 @@ def update_post(request, pk):
         return Response({"message": "Title and description are required"}, status=status.HTTP_400_BAD_REQUEST)
     post.title = title
     post.description = description
+    auth = UserManagement.objects.get(id=request.data.get("author"))
+    post.author = auth
     post.save()
     return Response("Post updated successfully")
 
