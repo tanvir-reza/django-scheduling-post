@@ -38,7 +38,21 @@ docker compose -f docker-compose.yml build
 echo ""
 echo "[3/7] Starting database..."
 docker compose -f docker-compose.yml up -d db
-sleep 3
+
+echo "Waiting for database to become healthy..."
+for i in {1..30}; do
+  DB_CONTAINER_ID=$(docker compose -f docker-compose.yml ps -q db)
+  DB_HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}starting{{end}}' "$DB_CONTAINER_ID" 2>/dev/null || echo "starting")
+  if [ "$DB_HEALTH" = "healthy" ]; then
+    echo "Database is healthy."
+    break
+  fi
+  if [ "$i" -eq 30 ]; then
+    echo "Database did not become healthy in time."
+    exit 1
+  fi
+  sleep 2
+done
 
 
 echo ""
