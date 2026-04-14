@@ -2,6 +2,6 @@
 app/__init__.py
 *.pyc
 /venv
-.env
+# .env
 /.vscode
 /redis_data
