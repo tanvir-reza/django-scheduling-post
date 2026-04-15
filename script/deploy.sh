@@ -41,9 +41,8 @@ docker compose -f docker-compose.yml up -d db
 
 echo "Waiting for database to become healthy..."
 for i in {1..30}; do
-  DB_CONTAINER_ID=$(docker compose -f docker-compose.yml ps -q db)
-  DB_HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}starting{{end}}' "$DB_CONTAINER_ID" 2>/dev/null || echo "starting")
-  if [ "$DB_HEALTH" = "healthy" ]; then
+  # check db from the database host not on docker container
+  if pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}; then
     echo "Database is healthy."
     break
   fi

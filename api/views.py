@@ -46,13 +46,15 @@ class CustomLoginView(LoginView):
         user_serializer = UserSerializer(user)
         refresh = RefreshToken.for_user(user)
         access_token = refresh.access_token
+        # return server ip and port
+        server_ip = request.META.get("HTTP_HOST")
         data = {
             "message": "User logged in successfully",
             "access_token": str(access_token),
             "refresh_token": str(refresh),
             "user": user_serializer.data  # Corrected this line
         }
-        return Response(data, status=status.HTTP_200_OK)
+        return Response({"data": data, "server_ip": server_ip,}, status=status.HTTP_200_OK)
 
 
 
