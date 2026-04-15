@@ -29,7 +29,7 @@ case $action_choice in
   4)  #Migrate Server
     source .venv/bin/activate
     python manage.py makemigrations --noinput
-    python manage.py migrate_schemas --noinput
+    python manage.py migrate --noinput
     ;;
   *)  # Invalid choice
     echo "Invalid choice. Please enter 1 for Backup or 2 for Restore."
