@@ -35,9 +35,7 @@ echo ""
 echo "[2/7] Building dev containers..."
 docker compose -f docker-compose.yml build
 
-echo ""
-echo "[3/7] Starting database..."
-docker compose -f docker-compose.yml up -d db
+
 
 echo "Waiting for database to become healthy..."
 for i in {1..30}; do
